@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 
+from middleware import require_middleware
+
 version = "v1"
 
 app = FastAPI(
@@ -9,3 +11,5 @@ app = FastAPI(
     docs_url=f"/api/{version}/docs",
     redoc_url=f"/api/{version}/redoc",
 )
+
+require_middleware(app)
