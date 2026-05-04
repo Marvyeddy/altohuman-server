@@ -9,10 +9,11 @@ from error import CookieMissing, InvalidSession, SessionExpired, UserNotFound
 
 
 async def get_current_user(request: Request, db: AsyncSession = Depends(get_session)):
-    session_token = request.cookies.get("better-auth.session_token")
-
-    if not session_token:
+    raw_cookie = request.cookies.get("better-auth.session_token")
+    if not raw_cookie:
         raise CookieMissing()
+
+    session_token = raw_cookie.split(".")[0]
 
     statement = select(Session).where(Session.token == session_token)
     result = await db.exec(statement)

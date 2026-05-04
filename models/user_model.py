@@ -6,11 +6,9 @@ import sqlalchemy.dialects.postgresql as pg
 
 class User(SQLModel, table=True):
     __tablename__ = "user"  # Better Auth uses singular 'user'
-    id: uuid.UUID = Field(
-        sa_column=Column(pg.UUID(as_uuid=True), default=uuid.uuid4, primary_key=True)
-    )
+    id: str = Field(primary_key=True)
     name: str
-    email: str = Field(sa_column=Column(pg.STRING, unique=True, index=True))
+    email: str = Field(sa_column=Column(pg.VARCHAR(255), unique=True, index=True))
     createdAt: datetime = Field(
         sa_column=Column(
             pg.TIMESTAMP(timezone=True), default=datetime.now(timezone.utc)

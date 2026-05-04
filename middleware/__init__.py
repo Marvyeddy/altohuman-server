@@ -22,17 +22,17 @@ def require_middleware(app: FastAPI):
         print(message)
         return response
 
+    # TRUSTED_HOST
+    app.add_middleware(
+        TrustedHostMiddleware,
+        allowed_hosts=["localhost", "127.0.0.1"],
+    )
+
     # CORS
-    app.middleware(
+    app.add_middleware(
         CORSMiddleware,
         allow_origins=["http://localhost:3000"],
         allow_methods=["*"],
         allow_headers=["*"],
         allow_credentials=True,
-    )
-
-    # TRUSTED_HOST
-    app.middleware(
-        TrustedHostMiddleware,
-        allowed_hosts=["localhost", "127.0.0.1"],
     )
