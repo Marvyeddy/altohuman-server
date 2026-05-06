@@ -1,17 +1,19 @@
 # Altohuman Backend
 
-Altohuman Backend is the Python API service for Altohuman. It is built with
-FastAPI, SQLModel, and PostgreSQL, with session-aware user lookup designed to
-work with Better Auth session cookies.
+Altohuman Backend is the FastAPI service for Altohuman. It provides
+session-aware user lookup for Better Auth cookies, credit-based text
+humanization/scoring, and Paystack payment handling.
 
 ## Tech Stack
 
 - **FastAPI** for the HTTP API layer
 - **SQLModel / SQLAlchemy** for database models and queries
 - **PostgreSQL** as the primary database
-- **psycopg** for PostgreSQL connectivity
+- **asyncpg** for async PostgreSQL connectivity
+- **Alembic** for database migrations
+- **LangChain Groq** for text scoring and humanization
 - **uv** for dependency and environment management
-- **Python 3.13**
+- **Python 3.13+**
 
 ## Project Structure
 
@@ -26,9 +28,13 @@ work with Better Auth session cookies.
 |   `-- __init__.py      # Custom application exceptions and handlers
 |-- middleware/
 |   `-- __init__.py      # Logging, CORS, and trusted host middleware
-|-- models/
-|   |-- session_model.py # Better Auth-compatible session table
-|   `-- user_model.py    # Better Auth-compatible user table
+|-- migrations/          # Alembic migration environment and versions
+|-- models/              # SQLModel database models
+|-- routes/
+|   |-- humanizer_route.py
+|   |-- payment_route.py
+|   `-- user_route.py
+|-- schema/              # API response/request schemas
 |-- main.py              # FastAPI app entry point
 |-- pyproject.toml       # Project metadata and dependencies
 `-- uv.lock              # Locked dependency versions
@@ -51,13 +57,17 @@ pip install uv
 Create a `.env` file in the project root:
 
 ```env
-DATABASE_URL=postgresql+psycopg://USER:PASSWORD@HOST:PORT/DATABASE
+DATABASE_URL=postgresql+asyncpg://USER:PASSWORD@HOST:PORT/DATABASE
+PAYSTACK_SECRET_KEY=sk_test_or_live_key
+GROQ_API_KEY=your_groq_api_key
 ```
 
 Example for local development:
 
 ```env
-DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/altohuman
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/altohuman
+PAYSTACK_SECRET_KEY=sk_test_xxx
+GROQ_API_KEY=gsk_xxx
 ```
 
 ## Getting Started
@@ -66,6 +76,12 @@ Install dependencies:
 
 ```bash
 uv sync
+```
+
+Apply database migrations:
+
+```bash
+uv run alembic upgrade head
 ```
 
 Run the development server:
@@ -85,6 +101,15 @@ ReDoc documentation will be available at:
 ```text
 http://localhost:8000/api/v1/redoc
 ```
+
+## API Routes
+
+All routes are mounted under `/api/v1`.
+
+- `GET /user/me` returns the authenticated user's profile.
+- `POST /humanize/` scores or humanizes text, charging user credits.
+- `POST /payment/initialize/{plan_name}` creates a Paystack checkout session.
+- `POST /payment/webhook` receives Paystack payment events.
 
 ## Authentication Flow
 
@@ -107,23 +132,22 @@ dependency raises a custom Altohuman exception.
 
 ## Database Models
 
-The current schema includes:
+The schema includes Better Auth-compatible user, session, account, and
+verification tables, plus Altohuman payment and credit fields.
 
-- `user`
-  - `id`
-  - `name`
-  - `email`
-  - `createdAt`
-  - `updatedAt`
-- `session`
-  - `id`
-  - `userId`
-  - `token`
-  - `expiresAt`
-  - `createdAt`
-  - `updatedAt`
+Important user fields include:
 
-The table names and field names are intentionally compatible with Better Auth.
+- `id`
+- `name`
+- `email`
+- `credit`
+- `wordLimit`
+- `currentPlan`
+- `createdAt`
+- `updatedAt`
+
+Payment records store the Paystack reference, amount, granted credits, selected
+plan, status, and related user.
 
 ## Middleware
 
@@ -139,8 +163,9 @@ The application configures:
 - Swagger docs are served from `/api/v1/docs`.
 - ReDoc is served from `/api/v1/redoc`.
 - Custom error handlers are defined in `error/`; wire them into `main.py` with
-`require_error(app)` when global exception handling is needed.
-- The project currently does not include migrations or route modules.
+  `require_error(app)` when global exception handling is needed.
+- Paystack checkout callbacks currently point to
+  `http://localhost:3000/dashboard?status=success`.
 
 ## Useful Commands
 
@@ -148,6 +173,18 @@ Run the app:
 
 ```bash
 uv run fastapi dev main.py
+```
+
+Run migrations:
+
+```bash
+uv run alembic upgrade head
+```
+
+Create a new migration:
+
+```bash
+uv run alembic revision --autogenerate -m "describe change"
 ```
 
 Install or update dependencies:
