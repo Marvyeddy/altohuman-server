@@ -25,14 +25,16 @@ def require_middleware(app: FastAPI):
     # TRUSTED_HOST
     app.add_middleware(
         TrustedHostMiddleware,
-        allowed_hosts=["localhost", "127.0.0.1"],
+        allowed_hosts=["*"],
     )
 
     # CORS
     app.add_middleware(
         CORSMiddleware,
+        # No trailing slash on origin
         allow_origins=["http://localhost:3000"],
+        allow_credentials=True,
+        # Instead of ["*"], try listing them specifically to satisfy strict browsers
         allow_methods=["*"],
         allow_headers=["*"],
-        allow_credentials=True,
     )

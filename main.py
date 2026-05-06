@@ -16,7 +16,7 @@ app = FastAPI(
 )
 
 require_middleware(app)
-require_error(app)
+# require_error(app)
 
 
 app.include_router(user_router, prefix=f"/api/{version}/user", tags=["user"])

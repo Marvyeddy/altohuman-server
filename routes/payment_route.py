@@ -1,5 +1,7 @@
 import hashlib
 import hmac
+import uuid
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, Header, Request
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -8,8 +10,6 @@ from models.payment_model import Payment
 from models.user_model import User
 from dependencies.user import get_current_user
 from core.config import Config as cfg
-import uuid
-import httpx
 
 payment_router = APIRouter()
 
@@ -20,7 +20,7 @@ PLANS = {
 }
 
 
-@payment_router.post("/initialize")
+@payment_router.post("/initialize/{plan_name}")
 async def initialize_payment(
     plan_name: str,
     db: AsyncSession = Depends(get_session),
@@ -30,41 +30,73 @@ async def initialize_payment(
     if not plan:
         raise HTTPException(status_code=400, detail="Invalid plan")
 
-    headers = {"Authorization": f"Bearer {cfg.PAYSTACK_SECRET_KEY}"}
+    paystack_url = "https://api.paystack.co/transaction/initialize"
+    reference = str(uuid.uuid4())
 
-    tx_ref = str(uuid.uuid4())
+    headers = {
+        "Authorization": f"Bearer {cfg.PAYSTACK_SECRET_KEY.strip()}",
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+    }
 
     payload = {
         "email": current_user.email,
-        "amount": plan["amount"],
-        "reference": tx_ref,
+        "amount": int(plan["amount"]),  # Must be integer
+        "reference": reference,
         "callback_url": "http://localhost:3000/dashboard?status=success",
-        "metadata": {"user_id": current_user.id, "plan_name": plan_name.lower()},
+        "metadata": {"plan_name": plan_name.lower(), "user_id": current_user.id},
     }
 
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            "https://paystack.co", json=payload, headers=headers
-        )
-        res_data = response.json()
-
-        if res_data.get("status"):
-            # Create a pending payment record in your table
-            new_payment = Payment(
-                reference=tx_ref,
-                amount=plan["amount"],
-                credits_granted=plan["credits"],
-                new_word_limit=plan["wordLimit"],
-                user_id=current_user.id,
-                status="pending",
+    try:
+        async with httpx.AsyncClient() as client:
+            res = await client.post(
+                paystack_url, json=payload, headers=headers, timeout=20.0
             )
 
-            db.add(new_payment)
-            db.commit()
+        content_type = res.headers.get("content-type", "").lower()
+        if "application/json" not in content_type:
+            print(
+                f"Non-JSON response from Paystack ({res.status_code}): "
+                f"{res.text[:500]}"
+            )
+            raise HTTPException(
+                status_code=502,
+                detail="Payment gateway returned a non-JSON response",
+            )
 
-            return {"checkout_url": res_data["data"]["authorization_url"]}
+        data = res.json()
+    except httpx.RequestError as e:
+        print(f"Paystack connection error: {e}")
+        raise HTTPException(
+            status_code=502, detail="Could not connect to payment gateway"
+        )
+    except ValueError as e:
+        print(f"Paystack JSON parse error: {e}")
+        raise HTTPException(
+            status_code=502, detail="Payment gateway returned invalid JSON"
+        )
 
-        raise HTTPException(status_code=400, detail="Paystack error")
+    if not data.get("status"):
+        raise HTTPException(
+            status_code=400,
+            detail=data.get("message", "Payment initialization failed"),
+        )
+
+    payment = Payment(
+        reference=reference,
+        amount=int(plan["amount"]),
+        credits_granted=int(plan["credits"]),
+        new_word_limit=int(plan["wordLimit"]),
+        plan=plan_name.lower(),
+        user_id=current_user.id,
+    )
+    db.add(payment)
+    await db.commit()
+
+    return {
+        "checkout_url": data["data"]["authorization_url"],
+        "reference": reference,
+    }
 
 
 @payment_router.post("/webhook")
@@ -73,8 +105,9 @@ async def paystack_webhook(
     db: AsyncSession = Depends(get_session),
     x_paystack_signature: str = Header(None),
 ):
-    # Verify Paystack Signature
     body = await request.body()
+
+    # Verify Signature
     computed_hash = hmac.new(
         cfg.PAYSTACK_SECRET_KEY.encode("utf-8"), body, hashlib.sha512
     ).hexdigest()
@@ -87,25 +120,25 @@ async def paystack_webhook(
     if data.get("event") == "charge.success":
         reference = data["data"]["reference"]
 
-        # 1. Find the payment record
         statement = select(Payment).where(Payment.reference == reference)
-        payment_rec = db.exec(statement).first()
+        result = await db.exec(statement)
+        payment_rec = result.first()
 
         if payment_rec and payment_rec.status == "pending":
-            # 2. Update Payment Status
             payment_rec.status = "success"
 
-            # 3. Update User Credits and Word Limit
             user_statement = select(User).where(User.id == payment_rec.user_id)
-            user = db.exec(user_statement).first()
+            user_result = await db.exec(user_statement)
+            user = user_result.first()
 
             if user:
                 user.credit += payment_rec.credits_granted
                 user.wordLimit = payment_rec.new_word_limit
+                user.currentPlan = payment_rec.plan
 
                 db.add(user)
                 db.add(payment_rec)
-                db.commit()
-                print(f"Success: {user.email} upgraded to {user.wordLimit} limit.")
+                await db.commit()
+                print(f"Success: {user.email} upgraded.")
 
     return {"status": "received"}

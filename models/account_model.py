@@ -1,10 +1,11 @@
 from datetime import datetime, timezone
 from typing import Optional
 from sqlmodel import Column, Field, Relationship, SQLModel, text
-from .user_model import User
 import sqlalchemy.dialects.postgresql as pg
+from models import User
 
 
+# Define Account WITHOUT referencing User, and then add the relationship after both classes loaded
 class Account(SQLModel, table=True):
     __tablename__ = "account"
     id: str = Field(primary_key=True)
@@ -35,7 +36,7 @@ class Account(SQLModel, table=True):
         sa_column=Column(pg.TIMESTAMP(timezone=True), nullable=False)
     )
 
-    user: User = Relationship(back_populates="accounts")
+    user: "User" = Relationship(back_populates="accounts")
 
     def __repr__(self):
         return (

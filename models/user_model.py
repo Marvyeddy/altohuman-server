@@ -20,6 +20,7 @@ class User(SQLModel, table=True):
     # Custom fields for your credits plan
     credit: int = Field(default=50)
     wordLimit: int = Field(default=300)
+    currentPlan: str = Field(default="Free")
 
     # Timestamps matching "timestamptz default CURRENT_TIMESTAMP"
     createdAt: datetime = Field(
