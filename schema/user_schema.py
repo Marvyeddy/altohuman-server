@@ -16,6 +16,7 @@ class UserPublic(BaseModel):
     name: str
     email: str
     credit: int
+    wordLimit: int
     currentPlan: str
     # Use a default empty list so it doesn't fail if the user has no payments
     payments: List[PaymentPublic] = []
