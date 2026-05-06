@@ -5,6 +5,10 @@ from core.db import get_session
 from dependencies.user import get_current_user
 from models.user_model import User
 from sqlmodel.ext.asyncio.session import AsyncSession
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 humanize_router = APIRouter()
 llm = ChatGroq(model="llama-3.3-70b-versatile", streaming=True)
@@ -38,7 +42,7 @@ async def handle_action(
     required_credits = COSTS.get(action, 1)
 
     # 2. Check Credit Balance
-    if user.credits < required_credits:
+    if user.credit < required_credits:
         return JSONResponse(
             status_code=402,
             content={"detail": "Insufficient credits", "code": "OUT_OF_CREDITS"},
@@ -55,7 +59,7 @@ async def handle_action(
         response = await llm.ainvoke(score_prompt)  # ADDED AWAIT
         score_value = response.content.strip()
 
-        user.credits -= required_credits
+        user.credit -= required_credits
         db.add(user)
         await db.commit()
 
@@ -70,7 +74,7 @@ async def handle_action(
 
     if action == "humanize":
         await db.refresh(user)
-        user.credits -= required_credits
+        user.credit -= required_credits
         db.add(user)
         await db.commit()
 

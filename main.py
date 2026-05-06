@@ -23,5 +23,5 @@ require_middleware(app)
 app.include_router(user_router, prefix=f"/api/{version}/user", tags=["user"])
 app.include_router(payment_router, prefix=f"/api/{version}/payment", tags=["payment"])
 app.include_router(
-    humanize_router, prefix=f"/api/{version}/humanizer", tags=["humanizer"]
+    humanize_router, prefix=f"/api/{version}/humanize", tags=["humanizer"]
 )
