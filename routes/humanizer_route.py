@@ -38,7 +38,7 @@ async def handle_action(
     text = data.get("text")
     action = data.get("action")
 
-    COSTS = {"score": 1, "humanize": 5}
+    COSTS = {"score": 10, "humanize": 15}
     required_credits = COSTS.get(action, 1)
 
     # 2. Check Credit Balance
