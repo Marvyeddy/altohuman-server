@@ -32,7 +32,7 @@ def require_middleware(app: FastAPI):
     app.add_middleware(
         CORSMiddleware,
         # No trailing slash on origin
-        allow_origins=["http://localhost:3000"],
+        allow_origins=["https://altohuman.vercel.app"],
         allow_credentials=True,
         # Instead of ["*"], try listing them specifically to satisfy strict browsers
         allow_methods=["*"],

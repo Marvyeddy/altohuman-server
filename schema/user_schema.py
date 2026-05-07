@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List
 from datetime import datetime
 
 
@@ -18,7 +18,6 @@ class UserPublic(BaseModel):
     credit: int
     wordLimit: int
     currentPlan: str
-    # Use a default empty list so it doesn't fail if the user has no payments
     payments: List[PaymentPublic] = []
 
     class Config:

@@ -1,8 +1,8 @@
-"""fix
+"""neon db
 
-Revision ID: f223e4f6f0b1
+Revision ID: 69fadaf3745f
 Revises: 
-Create Date: 2026-05-05 01:52:46.156473
+Create Date: 2026-05-07 19:11:39.738857
 
 """
 from typing import Sequence, Union
@@ -13,7 +13,7 @@ import sqlmodel
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = 'f223e4f6f0b1'
+revision: str = '69fadaf3745f'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -30,6 +30,7 @@ def upgrade() -> None:
     sa.Column('image', sa.TEXT(), nullable=True),
     sa.Column('credit', sa.Integer(), nullable=False),
     sa.Column('wordLimit', sa.Integer(), nullable=False),
+    sa.Column('currentPlan', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('createdAt', postgresql.TIMESTAMP(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
     sa.Column('updatedAt', postgresql.TIMESTAMP(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
     sa.PrimaryKeyConstraint('id'),
@@ -69,6 +70,7 @@ def upgrade() -> None:
     sa.Column('credits_granted', sa.Integer(), nullable=False),
     sa.Column('new_word_limit', sa.Integer(), nullable=False),
     sa.Column('status', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('plan', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('user_id', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('createdAt', sa.DateTime(), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),

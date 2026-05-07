@@ -60,6 +60,9 @@ Create a `.env` file in the project root:
 DATABASE_URL=postgresql+asyncpg://USER:PASSWORD@HOST:PORT/DATABASE
 PAYSTACK_SECRET_KEY=sk_test_or_live_key
 GROQ_API_KEY=your_groq_api_key
+REDIS_URL=redis://localhost:6379/0
+RATE_LIMIT_REQUESTS=100
+RATE_LIMIT_WINDOW_SECONDS=60
 ```
 
 Example for local development:
@@ -68,6 +71,9 @@ Example for local development:
 DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/altohuman
 PAYSTACK_SECRET_KEY=sk_test_xxx
 GROQ_API_KEY=gsk_xxx
+REDIS_URL=redis://localhost:6379/0
+RATE_LIMIT_REQUESTS=100
+RATE_LIMIT_WINDOW_SECONDS=60
 ```
 
 ## Getting Started
@@ -154,6 +160,8 @@ plan, status, and related user.
 The application configures:
 
 - Request logging with method, path, status code, and processing time
+- Redis-backed route rate limiting with `fastapi-limiter`, configurable with
+  `REDIS_URL`, `RATE_LIMIT_REQUESTS`, and `RATE_LIMIT_WINDOW_SECONDS`
 - CORS for `http://localhost:3000`
 - Trusted hosts for `localhost` and `127.0.0.1`
 
