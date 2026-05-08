@@ -9,7 +9,7 @@ from error import CookieMissing, InvalidSession, SessionExpired, UserNotFound
 
 
 async def get_current_user(request: Request, db: AsyncSession = Depends(get_session)):
-    raw_cookie = request.cookies.get("better-auth.session_token")
+    raw_cookie = request.cookies.get("__Secure-better-auth.session_token")
     if not raw_cookie:
         raise CookieMissing()
 
