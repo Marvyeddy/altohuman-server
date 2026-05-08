@@ -34,7 +34,7 @@ async def initialize_payment(
     reference = str(uuid.uuid4())
 
     headers = {
-        "Authorization": f"Bearer {cfg.PAYSTACK_SECRET_KEY.strip()}",
+        "Authorization": f"Bearer {cfg.PAYSTACK_SECRET_TEST_KEY.strip()}",
         "Content-Type": "application/json",
         "Accept": "application/json",
     }
@@ -109,7 +109,7 @@ async def paystack_webhook(
 
     # Verify Signature
     computed_hash = hmac.new(
-        cfg.PAYSTACK_SECRET_KEY.encode("utf-8"), body, hashlib.sha512
+        cfg.PAYSTACK_SECRET_TEST_KEY.encode("utf-8"), body, hashlib.sha512
     ).hexdigest()
 
     if computed_hash != x_paystack_signature:
