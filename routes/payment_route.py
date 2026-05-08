@@ -43,7 +43,7 @@ async def initialize_payment(
         "email": current_user.email,
         "amount": int(plan["amount"]),  # Must be integer
         "reference": reference,
-        "callback_url": "http://localhost:3000/dashboard?status=success",
+        "callback_url": "https://altohuman.vercel.app/dashboard?status=success",
         "metadata": {"plan_name": plan_name.lower(), "user_id": current_user.id},
     }
 
