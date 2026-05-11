@@ -14,7 +14,7 @@ from core.config import Config as cfg
 payment_router = APIRouter()
 
 PLANS = {
-    "starter": {"amount": 10000, "credits": 200, "wordLimit": 600},
+    "starter": {"amount": 20000, "credits": 200, "wordLimit": 600},
     "pro": {"amount": 50000, "credits": 500, "wordLimit": 1200},
     "advanced": {"amount": 100000, "credits": 1000, "wordLimit": 3000},
 }

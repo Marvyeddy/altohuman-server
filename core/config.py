@@ -3,7 +3,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     DATABASE_URL: str
-    PAYSTACK_SECRET_TEST_KEY: str
+    PAYSTACK_SECRET_LIVE_KEY: str
     REDIS_URL: str
     RATE_LIMIT_REQUESTS: int = 100
     RATE_LIMIT_WINDOW_SECONDS: int = 60
