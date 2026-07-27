@@ -11,7 +11,7 @@ load_dotenv()
 
 
 humanize_router = APIRouter()
-llm = ChatGroq(model="llama-3.3-70b-versatile", streaming=True)
+llm = ChatGroq(model="llama-3.1-8b-instant", streaming=True)
 
 
 async def stream_humanizer(text: str):

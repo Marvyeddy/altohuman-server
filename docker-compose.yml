@@ -1,0 +1,59 @@
+services:
+  api:
+    build: .
+    container_name: altohuman-api
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+
+  db:
+    image: postgres:17
+    container_name: altohuman-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: altohuman
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:7
+    container_name: altohuman-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  celery:
+    build: .
+    container_name: altohuman-celery
+    command: celery -A src.celery_tasks.c_app worker --loglevel=INFO
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - db
+    restart: unless-stopped
+
+  flower: 
+    build: .
+    container_name: altohuman-flower
+    command: celery -A src.celery_tasks.c_app flower --port=5555
+    ports:
+      - "5555:5555"
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - celery
+    restart: unless-stopped
+
+volumes:
+  db-data:
