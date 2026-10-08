@@ -11,7 +11,7 @@ load_dotenv()
 
 
 humanize_router = APIRouter()
-llm = ChatGroq(model="llama-3.1-8b-instant", streaming=True)
+llm = ChatGroq(model="qwen/qwen3.8-27b", streaming=True)
 
 
 async def stream_humanizer(text: str):
@@ -23,8 +23,9 @@ async def stream_humanizer(text: str):
         ("human", text),
     ]
     async for chunk in llm.astream(prompt):
-        if chunk.content:
-            clean_chunk = chunk.content.replace("*", "")
+        result = chunk.get("result")
+        if result:
+            clean_chunk = result.replace("*", "")
             yield clean_chunk
 
 
