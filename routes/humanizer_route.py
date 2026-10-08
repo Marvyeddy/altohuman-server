@@ -16,7 +16,6 @@ llm = ChatGroq(
     model="qwen/qwen3.8-27b",
     streaming=True,
     reasoning_format="hidden",  # Keeps raw thinking tokens out of user output
-    max_tokens=300,  # Keeps you safe under Groq's Free Tier limits
 )
 
 
