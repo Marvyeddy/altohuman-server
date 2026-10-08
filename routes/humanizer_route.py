@@ -9,9 +9,15 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-
 humanize_router = APIRouter()
-llm = ChatGroq(model="qwen/qwen3.8-27b", streaming=True)
+
+# 🧠 FIXED: Set max_tokens to prevent 429 errors and hide reasoning raw blocks
+llm = ChatGroq(
+    model="qwen/qwen3.8-27b",
+    streaming=True,
+    reasoning_format="hidden",  # Keeps raw thinking tokens out of user output
+    max_tokens=300,  # Keeps you safe under Groq's Free Tier limits
+)
 
 
 async def stream_humanizer(text: str):
@@ -22,10 +28,11 @@ async def stream_humanizer(text: str):
         ),
         ("human", text),
     ]
+
+    # LangChain yields AIMessageChunk objects
     async for chunk in llm.astream(prompt):
-        result = chunk.get("result")
-        if result:
-            clean_chunk = result.replace("*", "")
+        if chunk.content:
+            clean_chunk = chunk.content.replace("*", "")
             yield clean_chunk
 
 
@@ -57,12 +64,18 @@ async def handle_action(
             ),
             ("human", text),
         ]
-        response = await llm.ainvoke(score_prompt)  # ADDED AWAIT
+
+        # We lower max_tokens drastically for scoring since it only needs to return a digit
+        response = await llm.ainvoke(score_prompt, max_tokens=10)
         score_value = response.content.strip()
 
+        # Database transaction
         user.credit -= required_credits
         db.add(user)
         await db.commit()
+        await db.refresh(
+            user
+        )  # 🔄 FIXED: Refreshes state to prevent session detachment
 
         return JSONResponse(
             {
@@ -79,6 +92,7 @@ async def handle_action(
         db.add(user)
         await db.commit()
 
+        # Stream the response safely back to frontend
         return StreamingResponse(
             stream_humanizer(text),
             media_type="text/plain",
